@@ -1,66 +1,65 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
-import { projects, itemsForProject, connectorsForProject } from '../data/mockData'
-import { SourceBadge } from '../components/SourceBadge'
+import { ArrowRight, Sparkles } from 'lucide-react'
+import { Heading } from '@astryxdesign/core/Heading'
+import { Text } from '@astryxdesign/core/Text'
+import { Icon } from '@astryxdesign/core/Icon'
+import { HStack } from '@astryxdesign/core/Layout'
+import { projects, itemsForProject } from '../data/mockData'
 import { relativeTime } from '../lib/time'
-import type { SourceId } from '../types'
+import { ShaderBackground } from '../components/ShaderBackground'
 
 export function ProjectsPage() {
   return (
-    <div className="mx-auto min-h-screen max-w-4xl px-6 py-16">
-      <div className="mb-10">
-        <div className="mb-2 flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-brand-orange to-brand-navy text-sm font-bold text-white">
+    <div className="relative min-h-screen overflow-hidden">
+      <ShaderBackground />
+      <div className="relative z-10 mx-auto max-w-4xl px-6 py-20">
+        <div className="mb-12 flex flex-col items-center gap-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-orange to-brand-navy text-xl font-bold text-white shadow-lg shadow-brand-navy/10">
             A
           </div>
-          <span className="text-sm font-semibold text-slate-600">Apphatchery Brain</span>
+          <HStack gap={2} vAlign="center">
+            <Icon icon={Sparkles} size="md" color="accent" />
+            <Heading level={1} type="display-2">
+              Apphatchery Brain
+            </Heading>
+          </HStack>
+          <Text type="body" color="secondary">
+            Pick a project to search and ask questions across its connected sources.
+          </Text>
         </div>
-        <h1 className="text-2xl font-semibold text-slate-900">Projects</h1>
-        <p className="mt-1 text-sm text-slate-500">Pick a project to search and ask questions across its connected sources.</p>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {projects.map((project) => {
-          const projectItems = itemsForProject(project.id)
-          const projectConnectors = connectorsForProject(project.id)
-          const sources = Array.from(new Set(projectItems.map((i) => i.source))) as SourceId[]
-          const latest = projectItems.reduce((max, i) => (i.updatedAt > max ? i.updatedAt : max), '0')
+        <div className="grid gap-4 sm:grid-cols-2">
+          {projects.map((project) => {
+            const projectItems = itemsForProject(project.id)
+            const latest = projectItems.reduce((max, i) => (i.updatedAt > max ? i.updatedAt : max), '0')
 
-          return (
-            <Link
-              key={project.id}
-              to={`/p/${project.id}`}
-              className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${project.color} text-base font-bold text-white`}
-                >
-                  {project.initial}
+            return (
+              <Link
+                key={project.id}
+                to={`/p/${project.id}`}
+                className="group flex flex-col gap-4 rounded-xl border border-slate-200 bg-white/90 p-5 shadow-sm backdrop-blur-sm transition hover:border-slate-300 hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${project.color} text-base font-bold text-white`}
+                  >
+                    {project.initial}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold text-slate-900">{project.name}</h2>
+                    <p className="text-xs text-slate-400">updated {relativeTime(latest)}</p>
+                  </div>
+                  <ArrowRight
+                    size={16}
+                    className="ml-auto shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500"
+                  />
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-semibold text-slate-900">{project.name}</h2>
-                  <p className="text-xs text-slate-400">updated {relativeTime(latest)}</p>
-                </div>
-                <ArrowRight
-                  size={16}
-                  className="ml-auto shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500"
-                />
-              </div>
 
-              <p className="text-[13px] leading-snug text-slate-500">{project.description}</p>
-
-              <div className="mt-auto flex items-center gap-2 border-t border-slate-100 pt-3">
-                {sources.map((s) => (
-                  <SourceBadge key={s} source={s} />
-                ))}
-                <span className="ml-auto text-[11px] text-slate-400">
-                  {projectItems.length} items · {projectConnectors.length} sources connected
-                </span>
-              </div>
-            </Link>
-          )
-        })}
+                <p className="text-[13px] leading-snug text-slate-500">{project.description}</p>
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

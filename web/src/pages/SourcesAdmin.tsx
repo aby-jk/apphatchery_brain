@@ -35,7 +35,7 @@ export function SourcesAdmin() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">Sources & Sync</h1>

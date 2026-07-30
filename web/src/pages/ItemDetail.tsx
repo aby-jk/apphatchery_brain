@@ -11,7 +11,7 @@ export function ItemDetail() {
 
   if (!item || item.projectId !== projectId) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10 text-sm text-slate-500">
+      <div className="mx-auto max-w-5xl px-6 py-10 text-sm text-slate-500">
         Item not found. <Link to={`/p/${projectId}`} className="text-brand-navy hover:underline">Go back</Link>
       </div>
     )
@@ -26,7 +26,7 @@ export function ItemDetail() {
   const related = items.filter((i) => relatedIds.has(i.id))
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-5xl px-6 py-8">
       <Link to={`/p/${projectId}`} className="mb-5 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600">
         <ArrowLeft size={13} /> Back
       </Link>

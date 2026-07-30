@@ -1,5 +1,11 @@
-import { Link } from 'react-router-dom'
-import { Sparkles, AlertCircle, Search } from 'lucide-react'
+import { Sparkles, Search, Brain } from 'lucide-react'
+import { Citation } from '@astryxdesign/core/Citation'
+import { ClickableCard } from '@astryxdesign/core/ClickableCard'
+import { Banner } from '@astryxdesign/core/Banner'
+import { Text } from '@astryxdesign/core/Text'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Collapsible } from '@astryxdesign/core/Collapsible'
+import { HStack, VStack } from '@astryxdesign/core/Layout'
 import { getItem } from '../data/mockData'
 import { SourceBadge } from './SourceBadge'
 import { ItemCard } from '../components/ItemCard'
@@ -7,59 +13,85 @@ import type { ChatMessage } from '../types'
 
 export const NO_ANSWER_SENTINEL = '__NO_ANSWER__'
 
+function ThinkingTrace({ steps }: { steps: string[] }) {
+  if (steps.length === 0) return null
+  return (
+    <Collapsible
+      defaultIsOpen={false}
+      trigger={
+        <HStack gap={1.5} vAlign="center">
+          <Icon icon={Brain} size="sm" color="secondary" />
+          <Text type="body" size="sm" color="secondary">
+            Thought for {steps.length} step{steps.length > 1 ? 's' : ''}
+          </Text>
+        </HStack>
+      }
+    >
+      <VStack gap={1.5} className="border-l border-slate-200 pl-3">
+        {steps.map((step, i) => (
+          <Text key={i} type="body" size="xsm" color="secondary">
+            {step}
+          </Text>
+        ))}
+      </VStack>
+    </Collapsible>
+  )
+}
+
 function AnswerText({ text, citationIds }: { text: string; citationIds: string[] }) {
   const parts = text.split(/(\[\d+\])/g)
   const citedItems = citationIds.map((id) => getItem(id)).filter(Boolean)
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-[13.5px] leading-relaxed text-slate-800">
+    <VStack gap={3}>
+      <Text type="body" size="sm" as="p">
         {parts.map((part, i) => {
           const m = part.match(/^\[(\d+)\]$/)
           if (m) {
             const idx = Number(m[1]) - 1
             const item = citedItems[idx]
             return (
-              <a
+              <Citation
                 key={i}
-                href={`#cite-${idx}`}
-                className="mx-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded bg-orange-100 px-1 align-super text-[9px] font-semibold text-brand-navy no-underline hover:bg-orange-200"
-                title={item?.title}
-              >
-                {m[1]}
-              </a>
+                variant="number"
+                number={Number(m[1])}
+                source={{ title: item?.title, url: `#cite-${idx}` }}
+              />
             )
           }
           return <span key={i}>{part}</span>
         })}
-      </p>
+      </Text>
 
       {citedItems.length > 0 && (
-        <div className="flex flex-col gap-1.5">
+        <VStack gap={1.5}>
           {citedItems.map((item, i) =>
             item ? (
-              <Link
-                key={item.id}
-                id={`cite-${i}`}
-                to={`/p/${item.projectId}/item/${item.id}`}
-                className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-white p-2.5 transition hover:border-slate-300 hover:bg-slate-50 scroll-mt-4"
-              >
-                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-semibold text-slate-500">
-                  {i + 1}
-                </span>
-                <div className="min-w-0">
-                  <div className="mb-1 flex items-center gap-2">
-                    <SourceBadge source={item.source} />
-                    <span className="truncate text-[13px] font-medium text-slate-800">{item.title}</span>
-                  </div>
-                  <p className="line-clamp-1 text-[12px] text-slate-500">{item.snippet}</p>
-                </div>
-              </Link>
+              <div key={item.id} id={`cite-${i}`} className="scroll-mt-4">
+                <ClickableCard label={item.title} href={`/p/${item.projectId}/item/${item.id}`} padding={2}>
+                  <HStack gap={3} vAlign="start">
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-slate-100 text-[10px] font-semibold text-slate-500">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <HStack gap={2} vAlign="center">
+                        <SourceBadge source={item.source} />
+                        <Text type="body" size="sm" weight="medium" maxLines={1}>
+                          {item.title}
+                        </Text>
+                      </HStack>
+                      <Text type="body" size="xsm" color="secondary" maxLines={1}>
+                        {item.snippet}
+                      </Text>
+                    </div>
+                  </HStack>
+                </ClickableCard>
+              </div>
             ) : null,
           )}
-        </div>
+        </VStack>
       )}
-    </div>
+    </VStack>
   )
 }
 
@@ -67,7 +99,7 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[75%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-brand-navy px-4 py-2.5 text-[13.5px] leading-relaxed text-white">
+        <div className="max-w-[75%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent-bg px-4 py-2.5 text-[13.5px] leading-relaxed text-on-accent">
           {message.text}
         </div>
       </div>
@@ -78,39 +110,42 @@ export function ChatMessageBubble({ message }: { message: ChatMessage }) {
 
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-orange to-brand-navy">
-        <Sparkles size={13} className="text-white" />
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-bg">
+        <Sparkles size={13} className="text-on-accent" />
       </div>
       <div className="min-w-0 max-w-[85%] flex-1">
-        {message.text === NO_ANSWER_SENTINEL ? (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-            <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />
-            <div>
-              <p className="font-medium">No grounded answer found</p>
-              <p className="mt-1 text-[13px] text-amber-800/80">
-                Nothing in the connected sources is clearly related to this question. Try rephrasing, or switch to
-                Search mode to browse loosely related items.
-              </p>
-            </div>
-          </div>
-        ) : message.mode === 'search' ? (
-          <div className="flex flex-col gap-2">
-            <p className="flex items-center gap-1.5 text-[13px] text-slate-500">
-              <Search size={12} />
-              {message.text}
-            </p>
-            <div className="flex flex-col gap-2">
-              {searchResults.map((item) => (
-                <ItemCard key={item!.id} item={item!} />
-              ))}
-              {searchResults.length === 0 && (
-                <p className="text-[13px] text-slate-400">No matches. Try different keywords.</p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <AnswerText text={message.text} citationIds={message.citationIds ?? []} />
-        )}
+        <VStack gap={3}>
+          <ThinkingTrace steps={message.thinking ?? []} />
+
+          {message.text === NO_ANSWER_SENTINEL ? (
+            <Banner
+              status="warning"
+              title="No grounded answer found"
+              description="Nothing in the connected sources is clearly related to this question. Try rephrasing, or switch to Search mode to browse loosely related items."
+            />
+          ) : message.mode === 'search' ? (
+            <VStack gap={2}>
+              <HStack gap={1.5} vAlign="center">
+                <Search size={12} className="text-slate-500" />
+                <Text type="body" size="sm" color="secondary">
+                  {message.text}
+                </Text>
+              </HStack>
+              <VStack gap={2}>
+                {searchResults.map((item) => (
+                  <ItemCard key={item!.id} item={item!} />
+                ))}
+                {searchResults.length === 0 && (
+                  <Text type="body" size="sm" color="disabled">
+                    No matches. Try different keywords.
+                  </Text>
+                )}
+              </VStack>
+            </VStack>
+          ) : (
+            <AnswerText text={message.text} citationIds={message.citationIds ?? []} />
+          )}
+        </VStack>
       </div>
     </div>
   )

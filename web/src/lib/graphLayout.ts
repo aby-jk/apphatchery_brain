@@ -1,4 +1,4 @@
-import type { KBItem, Topic, SourceId } from '../types'
+import type { KBItem, Topic, SourceId, ItemTag } from '../types'
 
 export interface GraphNode {
   id: string
@@ -7,6 +7,7 @@ export interface GraphNode {
   y: number
   label: string
   source?: SourceId
+  tag?: ItemTag
   itemId?: string
   step: number
 }
@@ -19,6 +20,8 @@ export interface GraphEdge {
   y2: number
   kind: 'hub' | 'related'
   step: number
+  fromId?: string
+  toId?: string
 }
 
 export interface Graph {
@@ -93,6 +96,7 @@ export function buildGraph(items: KBItem[], topics: Topic[], stepOf: Map<string,
         y: pos.y,
         label: item.title,
         source: item.source,
+        tag: item.tag,
         itemId: item.id,
         step,
       })
@@ -107,6 +111,8 @@ export function buildGraph(items: KBItem[], topics: Topic[], stepOf: Map<string,
           y2: pos.y,
           kind: 'hub',
           step,
+          fromId: `hub-${key}`,
+          toId: item.id,
         })
       }
     })
@@ -122,7 +128,7 @@ export function buildGraph(items: KBItem[], topics: Topic[], stepOf: Map<string,
       const a = positions.get(item.id)!
       const b = positions.get(relId)!
       const step = Math.max(stepOf.get(item.id)!, stepOf.get(relId)!)
-      edges.push({ id: `rel-${pairKey}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: 'related', step })
+      edges.push({ id: `rel-${pairKey}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: 'related', step, fromId: item.id, toId: relId })
     }
   }
 

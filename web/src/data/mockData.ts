@@ -1,4 +1,4 @@
-import type { KBItem, Topic, SourceConnector, Project } from '../types'
+import type { KBItem, Topic, SourceConnector, Project, ProjectMetrics, Study, ItemTag } from '../types'
 
 const iso = (offsetDays: number, hour = 10) => {
   const d = new Date()
@@ -7,9 +7,10 @@ const iso = (offsetDays: number, hour = 10) => {
   return d.toISOString()
 }
 
-type RawItem = Omit<KBItem, 'projectId'>
+type RawItem = Omit<KBItem, 'projectId' | 'tag'>
 type RawTopic = Omit<Topic, 'projectId'>
 type RawConnector = Omit<SourceConnector, 'projectId'>
+type RawStudy = Omit<Study, 'projectId'>
 
 export const projects: Project[] = [
   {
@@ -418,6 +419,39 @@ const fablaConnectors: RawConnector[] = [
   },
 ]
 
+const fablaStudies: RawStudy[] = [
+  {
+    id: 'study-fabla-1',
+    name: 'Checkout Abandonment EMA',
+    kind: 'EMA · Event-contingent',
+    status: 'completed',
+    summary: 'Prompted users immediately after abandoning checkout to capture what stopped them in the moment — led to moving the Apple Pay button above the card form.',
+    owner: 'Marcus Webb',
+    startedAt: iso(24),
+    topicId: 'checkout-redesign',
+  },
+  {
+    id: 'study-fabla-2',
+    name: 'Post-Purchase Confidence Diary',
+    kind: 'EMA · Interval-contingent (daily)',
+    status: 'running',
+    summary: 'Daily evening prompt for two weeks asking recent purchasers to rate confidence in their order and payment choice.',
+    owner: 'Priya Nair',
+    startedAt: iso(9),
+    topicId: 'checkout-redesign',
+  },
+  {
+    id: 'study-fabla-3',
+    name: 'Design System Usage Signal Study',
+    kind: 'EMA · Signal-contingent (4x/day)',
+    status: 'planned',
+    summary: 'Random in-session prompts asking designers and engineers which button variant they reached for and why, ahead of the accessibility audit.',
+    owner: 'Sofia Kim',
+    startedAt: iso(0),
+    topicId: 'design-system',
+  },
+]
+
 // ---------------------------------------------------------------------------
 // TypeU
 // ---------------------------------------------------------------------------
@@ -642,6 +676,28 @@ const typeuConnectors: RawConnector[] = [
   },
 ]
 
+const typeuStudies: RawStudy[] = [
+  {
+    id: 'study-typeu-1',
+    name: 'Onboarding Drop-off EMA',
+    kind: 'EMA · Event-contingent',
+    status: 'running',
+    summary: 'Prompted the moment a user exits onboarding before finishing their first typing test, capturing why in the moment.',
+    owner: 'Jae Lin',
+    startedAt: iso(6),
+    topicId: 'onboarding-redesign',
+  },
+  {
+    id: 'study-typeu-2',
+    name: 'WPM Perception Diary',
+    kind: 'EMA · Interval-contingent (post-session)',
+    status: 'planned',
+    summary: 'End-of-session prompt asking whether the displayed WPM felt accurate, to validate the corrected net-character calculation.',
+    owner: 'Priya Desai',
+    startedAt: iso(0),
+  },
+]
+
 // ---------------------------------------------------------------------------
 // Merged exports
 // ---------------------------------------------------------------------------
@@ -649,10 +705,51 @@ const typeuConnectors: RawConnector[] = [
 const withProject = <T extends { id: string }>(raw: T[], projectId: string): (T & { projectId: string })[] =>
   raw.map((r) => ({ ...r, projectId }))
 
+// Categorizes each item into one of the timeline tags (delivery / feature / issue / milestone / update).
+// Keyed by id rather than inlined on every item literal above, since most items only need the default.
+const ITEM_TAGS: Record<string, ItemTag> = {
+  // Fabla
+  'notion-1': 'milestone',
+  'zulip-1': 'milestone',
+  'zulip-2': 'milestone',
+  'notion-2': 'milestone',
+  'figma-1': 'feature',
+  'figma-2': 'update',
+  'github-issue-210': 'feature',
+  'github-pr-482': 'delivery',
+  'github-pr-482-comment': 'issue',
+  'zulip-3': 'update',
+  'notion-3': 'milestone',
+  'figma-3': 'feature',
+  'zulip-4': 'delivery',
+  'github-pr-501': 'delivery',
+  'github-issue-198': 'issue',
+  'github-commit-9f2': 'delivery',
+  'zulip-5': 'issue',
+  'notion-4': 'milestone',
+  'notion-5': 'update',
+  'figma-4': 'issue',
+  'github-issue-225': 'feature',
+  'zulip-6': 'update',
+  // TypeU
+  'tu-notion-1': 'milestone',
+  'zulip-tu-1': 'milestone',
+  'figma-tu-1': 'feature',
+  'figma-tu-2': 'update',
+  'github-tu-issue-88': 'feature',
+  'github-tu-pr-112': 'delivery',
+  'notion-tu-2': 'milestone',
+  'zulip-tu-2': 'update',
+  'github-tu-issue-95': 'issue',
+  'github-tu-commit-4a1': 'delivery',
+  'zulip-tu-3': 'issue',
+  'notion-tu-3': 'milestone',
+}
+
 export const items: KBItem[] = [
   ...withProject(fablaItems, 'fabla'),
   ...withProject(typeuItems, 'typeu'),
-] as KBItem[]
+].map((i) => ({ ...i, tag: ITEM_TAGS[i.id] ?? 'update' })) as KBItem[]
 
 export const topics: Topic[] = [
   ...withProject(fablaTopics, 'fabla'),
@@ -664,9 +761,35 @@ export const connectors: SourceConnector[] = [
   ...withProject(typeuConnectors, 'typeu'),
 ] as SourceConnector[]
 
+export const studies: Study[] = [
+  ...withProject(fablaStudies, 'fabla'),
+  ...withProject(typeuStudies, 'typeu'),
+] as Study[]
+
+export const metrics: ProjectMetrics[] = [
+  {
+    projectId: 'fabla',
+    activeUsers: 48210,
+    activeUsersDeltaPct: 4.2,
+    weeklyActiveUsers: 31890,
+    appStatus: 'operational',
+    uptime30d: 99.92,
+  },
+  {
+    projectId: 'typeu',
+    activeUsers: 15320,
+    activeUsersDeltaPct: 7.8,
+    weeklyActiveUsers: 9870,
+    appStatus: 'operational',
+    uptime30d: 99.98,
+  },
+]
+
 export const getItem = (id: string) => items.find((i) => i.id === id)
 export const getProject = (id: string) => projects.find((p) => p.id === id)
 
 export const itemsForProject = (projectId: string) => items.filter((i) => i.projectId === projectId)
 export const topicsForProject = (projectId: string) => topics.filter((t) => t.projectId === projectId)
 export const connectorsForProject = (projectId: string) => connectors.filter((c) => c.projectId === projectId)
+export const studiesForProject = (projectId: string) => studies.filter((s) => s.projectId === projectId)
+export const metricsForProject = (projectId: string) => metrics.find((m) => m.projectId === projectId)

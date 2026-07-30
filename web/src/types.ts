@@ -1,5 +1,7 @@
 export type SourceId = 'github' | 'zulip' | 'figma' | 'notion'
 
+export type ItemTag = 'delivery' | 'feature' | 'issue' | 'milestone' | 'update'
+
 export interface Project {
   id: string
   name: string
@@ -21,6 +23,7 @@ export interface KBItem {
   updatedAt: string
   url: string
   space: string
+  tag: ItemTag
   parentId?: string
   relatedIds?: string[]
   topicIds?: string[]
@@ -49,6 +52,8 @@ export interface SourceConnector {
 
 export type ChatMode = 'ask' | 'search'
 
+export type Persona = 'developer' | 'designer'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -56,6 +61,7 @@ export interface ChatMessage {
   text: string
   citationIds?: string[]
   searchResultIds?: string[]
+  thinking?: string[]
   createdAt: string
 }
 
@@ -66,4 +72,29 @@ export interface Conversation {
   createdAt: string
   updatedAt: string
   messages: ChatMessage[]
+}
+
+export type AppStatus = 'operational' | 'degraded' | 'outage'
+
+export interface ProjectMetrics {
+  projectId: string
+  activeUsers: number
+  activeUsersDeltaPct: number
+  weeklyActiveUsers: number
+  appStatus: AppStatus
+  uptime30d: number
+}
+
+export type StudyStatus = 'planned' | 'running' | 'completed'
+
+export interface Study {
+  id: string
+  projectId: string
+  name: string
+  kind: string
+  status: StudyStatus
+  summary: string
+  owner: string
+  startedAt: string
+  topicId?: string
 }

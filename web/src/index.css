@@ -1,5 +1,14 @@
-@import "tailwindcss";
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';
+@import '@astryxdesign/core/tailwind-theme.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Kept for pages not yet migrated to Astryx components/tokens. */
 @theme {
   --color-brand-navy: #1b4c82;
   --color-brand-navy-dark: #123a66;
@@ -13,8 +22,6 @@ html, body, #root {
 
 body {
   margin: 0;
-  background-color: #ffffff;
-  color: #16233a;
   font: 14px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -32,4 +39,19 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #b9c1cd;
+}
+
+@keyframes ask-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ask-fade-in {
+  animation: ask-fade-in 280ms ease-out;
 }

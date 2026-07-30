@@ -1,95 +1,219 @@
-import { NavLink, Outlet, useParams, Link } from 'react-router-dom'
-import {
-  Sparkles,
-  Rss,
-  Settings2,
-  ChevronDown,
-  Network,
-} from 'lucide-react'
-import { connectorsForProject, getProject } from '../data/mockData'
+import { Outlet, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Sparkles, Settings2, Network, Plus, MessageSquare, Trash2, Search, LayoutDashboard, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { AppShell } from '@astryxdesign/core/AppShell'
+import { SideNav, SideNavHeading, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav'
+import { IconButton } from '@astryxdesign/core/IconButton'
+import { ClickableCard } from '@astryxdesign/core/ClickableCard'
+import { TextInput } from '@astryxdesign/core/TextInput'
+import { Icon } from '@astryxdesign/core/Icon'
+import { Text } from '@astryxdesign/core/Text'
+import { VStack, HStack } from '@astryxdesign/core/Layout'
+import { getProject } from '../data/mockData'
+import { loadConversations, saveConversations } from '../lib/chatStore'
+import { uid } from '../lib/id'
+import type { Conversation, Persona } from '../types'
 
-function StatusDot({ status }: { status: string }) {
-  const color =
-    status === 'connected' ? 'bg-emerald-500' : status === 'syncing' ? 'bg-amber-500' : 'bg-red-500'
-  return <span className={`h-1.5 w-1.5 rounded-full ${color}`} />
+const PERSONA_STORAGE_KEY = 'apphatchery.persona'
+const SIDEBAR_COLLAPSED_KEY = 'apphatchery.sidebarCollapsed'
+
+export interface ChatHistoryContext {
+  conversations: Conversation[]
+  activeId: string
+  persist: (next: Conversation[]) => void
+  persona: Persona
+  setPersona: (persona: Persona) => void
 }
 
 export function Layout() {
+  const navigate = useNavigate()
   const { projectId = '' } = useParams()
 
   const project = getProject(projectId)
-  const connectors = connectorsForProject(projectId)
+
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [activeId, setActiveId] = useState<string>(() => uid())
+  const [historyQuery, setHistoryQuery] = useState('')
+  const [persona, setPersona] = useState<Persona>(
+    () => (localStorage.getItem(PERSONA_STORAGE_KEY) as Persona) || 'developer',
+  )
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true',
+  )
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem(PERSONA_STORAGE_KEY, persona)
+  }, [persona])
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed))
+    if (collapsed) setSearchOpen(false)
+  }, [collapsed])
+
+  useEffect(() => {
+    setConversations(loadConversations(projectId))
+    setActiveId(uid())
+    setHistoryQuery('')
+  }, [projectId])
+
+  const persist = (next: Conversation[]) => {
+    setConversations(next)
+    saveConversations(projectId, next)
+  }
+
+  const newChat = () => {
+    setActiveId(uid())
+    navigate(`/p/${projectId}`)
+  }
+
+  const selectConversation = (id: string) => {
+    setActiveId(id)
+    navigate(`/p/${projectId}`)
+  }
+
+  const deleteConversation = (id: string) => {
+    persist(conversations.filter((c) => c.id !== id))
+    if (id === activeId) setActiveId(uid())
+  }
 
   const navItems = [
-    { to: `/p/${projectId}`, label: 'Ask', icon: Sparkles, end: true },
-    { to: `/p/${projectId}/memory`, label: 'Memory', icon: Network, end: false },
-    { to: `/p/${projectId}/activity`, label: 'Activity', icon: Rss, end: false },
-    { to: `/p/${projectId}/admin`, label: 'Sources & Sync', icon: Settings2, end: false },
+    { to: `/p/${projectId}`, label: 'Ask', icon: Sparkles },
+    { to: `/p/${projectId}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
+    { to: `/p/${projectId}/memory`, label: 'Memory', icon: Network },
+    { to: `/p/${projectId}/admin`, label: 'Sources & Sync', icon: Settings2 },
   ]
 
+  const sortedConversations = [...conversations].sort(
+    (a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt),
+  )
+  const filteredConversations = (() => {
+    const q = historyQuery.trim().toLowerCase()
+    if (!q) return sortedConversations
+    return sortedConversations.filter(
+      (c) => c.title.toLowerCase().includes(q) || c.messages.some((m) => m.text.toLowerCase().includes(q)),
+    )
+  })()
+
+  const ctx: ChatHistoryContext = { conversations, activeId, persist, persona, setPersona }
+  const currentPath = `/p/${projectId}${location.hash.replace(/^#\/p\/[^/]+/, '')}`
+
   return (
-    <div className="flex h-screen w-full bg-white text-slate-800">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-[#F7F8FB]">
-        <Link
-          to="/"
-          className="flex items-center gap-2 px-4 py-4 transition hover:bg-slate-50"
-        >
-          <div
-            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br ${project?.color ?? 'from-brand-orange to-brand-navy'} text-sm font-bold text-white`}
-          >
-            {project?.initial ?? 'A'}
-          </div>
-          <div className="min-w-0">
-            <span className="block truncate text-sm font-semibold">{project?.name ?? 'Apphatchery Brain'}</span>
-          </div>
-          <ChevronDown size={14} className="ml-auto shrink-0 text-slate-400" />
-        </Link>
-        <nav className="flex flex-col gap-0.5 px-2">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition ${
-                  isActive
-                    ? 'bg-orange-50 font-medium text-brand-navy'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                }`
+    <AppShell
+      variant="section"
+      height="fill"
+      sideNav={
+        <SideNav
+          collapsible={{ isCollapsed: collapsed, onCollapsedChange: setCollapsed, hasButton: false }}
+          header={
+            <SideNavHeading
+              heading={project?.name ?? 'Apphatchery Brain'}
+              superheading="Apphatchery Brain"
+              headingHref="/"
+              superheadingHref="/"
+              icon={
+                <div
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-gradient-to-br ${project?.color ?? 'from-brand-orange to-brand-navy'} text-sm font-bold text-white`}
+                >
+                  {project?.initial ?? 'A'}
+                </div>
               }
-            >
-              <Icon size={16} strokeWidth={2} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="mt-auto border-t border-slate-200 px-3 py-3">
-          <div className="mb-2 px-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
-            Sources
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {connectors.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 px-1 text-[12px] text-slate-500">
-                <StatusDot status={c.status} />
-                {c.name}
-              </div>
+              headerEndContent={
+                <HStack gap={0.5} vAlign="center">
+                  <IconButton
+                    label="Search chat history"
+                    icon={<Icon icon={Search} size="sm" />}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearchOpen((v) => !v)}
+                  />
+                  <IconButton
+                    label="Collapse sidebar"
+                    icon={<Icon icon={PanelLeftClose} size="sm" />}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCollapsed(true)}
+                  />
+                </HStack>
+              }
+            />
+          }
+          topContent={
+            <VStack gap={2}>
+              {collapsed && (
+                <IconButton
+                  label="Expand sidebar"
+                  icon={<Icon icon={PanelLeftOpen} size="sm" />}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCollapsed(false)}
+                />
+              )}
+              <SideNavItem label="New chat" icon={Plus} onClick={newChat} />
+              {searchOpen && !collapsed && (
+                <TextInput
+                  label="Search chat history"
+                  isLabelHidden
+                  value={historyQuery}
+                  onChange={setHistoryQuery}
+                  placeholder="Search chat history…"
+                  startIcon={Search}
+                  hasClear
+                  hasAutoFocus
+                />
+              )}
+            </VStack>
+          }
+        >
+          <SideNavSection title="Navigate" isHeaderHidden={collapsed}>
+            {navItems.map(({ to, label, icon }) => (
+              <SideNavItem key={to} label={label} icon={icon} href={to} isSelected={currentPath === to} />
             ))}
-          </div>
-        </div>
-      </aside>
+          </SideNavSection>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-end border-b border-slate-200 px-5 py-3">
-          <div className="flex items-center gap-2 text-[11px] text-slate-400">
-            <span className="rounded-full border border-slate-200 px-2 py-1">Internal preview</span>
-          </div>
-        </header>
-
-        <main className="min-w-0 flex-1 overflow-y-auto">
-          <Outlet />
-        </main>
-      </div>
-    </div>
+          {!collapsed && (
+            <SideNavSection title="History">
+              {filteredConversations.length === 0 && (
+                <Text type="body" size="sm" color="disabled">
+                  {historyQuery ? 'No matching conversations.' : 'No conversations yet.'}
+                </Text>
+              )}
+              {filteredConversations.map((c) => (
+                <ClickableCard
+                  key={c.id}
+                  label={c.title}
+                  onClick={() => selectConversation(c.id)}
+                  padding={1.5}
+                  variant="transparent"
+                  className={`group ${c.id === activeId ? 'bg-accent-muted' : ''}`}
+                >
+                  <HStack gap={2} vAlign="center">
+                    <Icon icon={MessageSquare} size="sm" color="secondary" />
+                    <div className="min-w-0 flex-1">
+                      <Text type="body" size="sm" maxLines={1}>
+                        {c.title}
+                      </Text>
+                    </div>
+                    <IconButton
+                      label="Delete conversation"
+                      icon={<Icon icon={Trash2} size="sm" />}
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteConversation(c.id)
+                      }}
+                    />
+                  </HStack>
+                </ClickableCard>
+              ))}
+            </SideNavSection>
+          )}
+        </SideNav>
+      }
+    >
+      <Outlet context={ctx} />
+    </AppShell>
   )
 }

@@ -1,5 +1,5 @@
 import { items } from '../data/mockData'
-import type { KBItem } from '../types'
+import type { KBItem, Persona } from '../types'
 
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'is', 'are', 'was', 'were', 'to', 'of', 'in', 'on', 'for',
@@ -42,88 +42,135 @@ export function searchItems(query: string, pool: KBItem[] = items): ScoredItem[]
 export interface Answer {
   text: string
   citationIds: string[]
+  thinking: string[]
 }
 
 interface Canned {
   match: RegExp
-  build: () => Answer
+  citationIds: string[]
+  thinking: string[]
+  developer: string
+  designer: string
 }
 
 const FABLA_CANNED: Canned[] = [
   {
     match: /apple\s?pay/i,
-    build: () => ({
-      text:
-        "Apple Pay support was added as part of the checkout redesign. The team chose Stripe over Braintree specifically because it had better out-of-the-box Apple Pay support and lower per-transaction fees [1][2]. Implementation is tracked in GitHub issue #210 and shipped via PR #482, which adds both Apple Pay and Google Pay wallet support [3][4]. On the design side, the Apple Pay button was moved above the card form based on usability testing showing ~30% of mobile users are on iOS [5].",
-      citationIds: ['zulip-2', 'notion-2', 'github-issue-210', 'github-pr-482', 'figma-2'],
-    }),
+    citationIds: ['zulip-2', 'notion-2', 'github-issue-210', 'github-pr-482', 'figma-2'],
+    thinking: [
+      'Searching connected sources for "Apple Pay"…',
+      'Found a decision thread in Zulip and Notion about Stripe vs. Braintree, plus GitHub issue #210 and PR #482.',
+      'Cross-referencing a Figma comment about button placement — same feature, design side.',
+      'Synthesizing into one grounded answer with citations.',
+    ],
+    developer:
+      "Apple Pay shipped in PR #482 on top of GitHub issue #210, adding both Apple Pay and Google Pay wallet support [3][4]. The team picked Stripe over Braintree for the checkout rewrite specifically for its better out-of-the-box Apple Pay support and lower per-transaction fees [1][2]. The Apple Pay button was also moved above the card form based on usability data [5].",
+    designer:
+      "The Apple Pay button was moved above the card form after usability testing showed roughly 30% of mobile users are on iOS [5]. That sits alongside the decision to build on Stripe over Braintree for the checkout redesign, chosen for stronger native Apple Pay support and lower fees [1][2]. Apple Pay and Google Pay wallet support shipped together via PR #482, tracked from issue #210 [3][4].",
   },
   {
     match: /stripe|payment provider|braintree/i,
-    build: () => ({
-      text:
-        "The team evaluated Stripe, Braintree, and Adyen for the checkout redesign and decided on Stripe [1]. The decision, made by Dan Ohara and confirmed by Priya Nair in Zulip, cited better Apple Pay support and lower fees at their transaction volume [2]. This is also recorded in the project's decision log [3].",
-      citationIds: ['notion-2', 'zulip-2', 'notion-3'],
-    }),
+    citationIds: ['notion-2', 'zulip-2', 'notion-3'],
+    thinking: [
+      'Searching for the payment provider decision…',
+      'Found the comparison doc in Notion and the decision message in Zulip from Dan Ohara.',
+      "Checking the running decision log to confirm this is still the current call.",
+    ],
+    developer:
+      "Stripe, Braintree, and Adyen were evaluated for the checkout rewrite; Stripe won on API ergonomics, Apple Pay support, and lower fees at their transaction volume [1]. Dan Ohara made the call, confirmed by Priya Nair in Zulip [2], and it's logged in the project's decision log [3].",
+    designer:
+      "For the checkout redesign, Stripe was picked over Braintree and Adyen largely because it gave the smoothest native Apple Pay experience and kept fees down at their transaction volume [1]. Dan Ohara made the call, confirmed by Priya Nair in Zulip [2], with the full reasoning captured in the decision log [3].",
   },
   {
     match: /checkout.*(status|progress|launch)|status.*checkout/i,
-    build: () => ({
-      text:
-        "As of the latest status update in Zulip, the Stripe migration PR (#482) was in review and targeting merge the following week, the v3 design frames were finalized, and the team was on track for an Aug 15, 2026 launch [1][2][3]. The Q3 roadmap also lists the checkout redesign launch as the top priority [4].",
-      citationIds: ['zulip-3', 'github-pr-482', 'figma-1', 'notion-4'],
-    }),
+    citationIds: ['zulip-3', 'github-pr-482', 'figma-1', 'notion-4'],
+    thinking: [
+      'Looking for the latest status on the checkout redesign…',
+      'Found a recent Zulip status update, the linked PR #482, and the Figma v3 frames.',
+      'Checking the Q3 roadmap doc to confirm priority and target date.',
+    ],
+    developer:
+      "Per the latest Zulip status update, PR #482 (Stripe migration) was in review and targeting merge the following week [1][2]. The v3 design frames were finalized [3], and the Q3 roadmap has the checkout redesign launch as the top priority for an Aug 15, 2026 target [4].",
+    designer:
+      "The v3 design frames for checkout were finalized [3], with the Stripe migration PR in review and on track to merge the following week [1][2]. It's the top item on the Q3 roadmap, targeting an Aug 15, 2026 launch [4].",
   },
   {
     match: /incident|500s|outage|postmortem/i,
-    build: () => ({
-      text:
-        "There was an incident on July 19 with elevated 500 errors on /api/cart, caused by a discount-service deploy that skipped its canary stage due to a CI configuration gap [1]. It was rolled back, and the postmortem notes a required canary stage is being added [2]. Separately, a related rounding bug in discount-code stacking was fixed around the same time [3][4].",
-      citationIds: ['zulip-5', 'zulip-6', 'github-issue-198', 'github-commit-9f2'],
-    }),
+    citationIds: ['zulip-5', 'zulip-6', 'github-issue-198', 'github-commit-9f2'],
+    thinking: [
+      'Searching for recent incidents or elevated error rates…',
+      'Found two Zulip threads about a July 19 incident, plus a GitHub issue and commit for a related fix.',
+      "Separating the root cause (a skipped canary stage) from the adjacent discount-rounding bug so they don't get conflated.",
+    ],
+    developer:
+      "On July 19, a discount-service deploy skipped its canary stage due to a CI config gap, causing elevated 500s on /api/cart [1]. It was rolled back, and the postmortem added a required canary stage to prevent a repeat [2][3]. A related rounding bug in discount-code stacking was also fixed around the same time [4].",
+    designer:
+      "There was a rough patch around July 19 where checkout errored out for a chunk of users — a deploy skipped a safety check and had to be rolled back [1][2]. That check is now mandatory going forward [3]. A related issue with stacked discount codes rounding incorrectly was fixed around the same time [4].",
   },
   {
     match: /button|design system|design token/i,
-    build: () => ({
-      text:
-        "The design system's button component specs (primary, secondary, ghost, destructive, with all interaction states) live in a Figma file maintained by Marcus Webb [1]. When tokens are updated there, engineering syncs them into the design-tokens npm package [2][3]. A recent update also fixed a contrast issue on the destructive variant to meet AA accessibility [4].",
-      citationIds: ['figma-3', 'zulip-4', 'github-pr-501', 'figma-4'],
-    }),
+    citationIds: ['figma-3', 'zulip-4', 'github-pr-501', 'figma-4'],
+    thinking: [
+      'Searching design system and component sources…',
+      'Found the button spec in Figma (Marcus Webb) and the PR that syncs tokens into the npm package.',
+      'Checking for any recent accessibility fixes tied to this component.',
+    ],
+    developer:
+      "Button component specs (primary, secondary, ghost, destructive, all interaction states) live in Figma, maintained by Marcus Webb [1]. Token updates there get synced into the design-tokens npm package via PR #501 [2][3]. A recent fix also corrected a contrast issue on the destructive variant to meet AA accessibility [4].",
+    designer:
+      "Marcus Webb maintains the button component in Figma — primary, secondary, ghost, and destructive variants, each with full interaction states [1]. Those tokens flow into the design-tokens package that engineering consumes [2][3]. The destructive variant's contrast was recently fixed to meet AA accessibility [4].",
   },
 ]
 
 const TYPEU_CANNED: Canned[] = [
   {
     match: /onboarding/i,
-    build: () => ({
-      text:
-        "The onboarding redesign aims to get new users typing within 30 seconds of landing, per Jae Lin's PRD [1]. The key decision was to defer account creation until after the first typing test, storing results locally and merging them into the account on signup [2][3]. It shipped via PR #112 and is rolling out as a 50% A/B test before full launch [4][5].",
-      citationIds: ['tu-notion-1', 'github-tu-issue-88', 'notion-tu-2', 'github-tu-pr-112', 'zulip-tu-2'],
-    }),
+    citationIds: ['tu-notion-1', 'github-tu-issue-88', 'notion-tu-2', 'github-tu-pr-112', 'zulip-tu-2'],
+    thinking: [
+      'Searching for onboarding redesign context…',
+      'Found the PRD in Notion, the GitHub issue and PR, and a Zulip note on rollout percentage.',
+      'Ordering by decision → implementation → rollout status.',
+    ],
+    developer:
+      "The onboarding redesign shipped via PR #112 [4], rolling out as a 50% A/B test ahead of full launch [5]. The key implementation decision was deferring account creation until after the first typing test — results are stored locally and merged into the account on signup [2][3]. Target, per Jae Lin's PRD, was getting new users typing within 30 seconds of landing [1].",
+    designer:
+      "Jae Lin's PRD set the bar at getting new users typing within 30 seconds of landing [1]. To hit that, account creation was pushed until after the first typing test, so people can try the product before committing [2][3]. It's rolling out as a 50% A/B test before full launch [4][5].",
   },
   {
     match: /sign\s?up|account creation/i,
-    build: () => ({
-      text:
-        "Account creation was moved to after the first typing test as part of the onboarding redesign — anonymous results are stored locally and merged into the account on signup, reducing friction at what was the highest drop-off step [1][2].",
-      citationIds: ['github-tu-issue-88', 'notion-tu-2'],
-    }),
+    citationIds: ['github-tu-issue-88', 'notion-tu-2'],
+    thinking: [
+      'Searching for account creation / sign-up flow changes…',
+      'Found the GitHub issue proposing the change and the Notion doc explaining the rationale.',
+    ],
+    developer:
+      "Account creation moved to after the first typing test — results are captured anonymously and merged into the account on signup once the user converts [1][2].",
+    designer:
+      "Signing up got pushed past the first typing test, since account creation was the biggest drop-off point — now people try it first, and results carry over once they do sign up [1][2].",
   },
   {
     match: /wpm|words per minute|typing (speed|accuracy)/i,
-    build: () => ({
-      text:
-        "There was a bug where WPM was inflated for users who backspace a lot, because corrected characters were still counted toward gross output [1]. It was fixed by computing WPM from net correct characters instead, matching the standard typing-test definition [2].",
-      citationIds: ['github-tu-issue-95', 'github-tu-commit-4a1'],
-    }),
+    citationIds: ['github-tu-issue-95', 'github-tu-commit-4a1'],
+    thinking: [
+      'Searching for WPM calculation issues…',
+      'Found the GitHub issue describing the bug and the commit that fixed it.',
+    ],
+    developer:
+      "WPM was inflated for users who backspace a lot, since corrected characters still counted toward gross output [1]. Fixed by computing WPM from net correct characters instead, matching the standard typing-test definition [2].",
+    designer:
+      "Heavy backspacers were seeing inflated WPM scores because corrections still counted toward the total [1]. The calculation now uses net correct characters, so the number reflects what actually landed on screen [2].",
   },
   {
     match: /latency|incident|outage|500s|slow/i,
-    build: () => ({
-      text:
-        "There was a latency incident on /api/sessions where p95 spiked to 4s, caused by a missing index on the new streak-tracking query. It was identified and fixed the same morning [1].",
-      citationIds: ['zulip-tu-3'],
-    }),
+    citationIds: ['zulip-tu-3'],
+    thinking: [
+      'Searching for latency or performance incidents…',
+      'Found a single Zulip thread describing the /api/sessions p95 spike and its fix.',
+    ],
+    developer:
+      "p95 latency on /api/sessions spiked to 4s due to a missing index on the new streak-tracking query. Identified and fixed same-day [1].",
+    designer:
+      "/api/sessions got noticeably slow for a bit — a missing database index on the streak-tracking query. Caught and fixed the same morning [1].",
   },
 ]
 
@@ -132,22 +179,44 @@ const CANNED_BY_PROJECT: Record<string, Canned[]> = {
   typeu: TYPEU_CANNED,
 }
 
-export function generateAnswer(query: string, pool: KBItem[] = items, projectId?: string): Answer | null {
+export function generateAnswer(
+  query: string,
+  pool: KBItem[] = items,
+  projectId?: string,
+  persona: Persona = 'developer',
+): Answer | null {
+  const poolIds = new Set(pool.map((i) => i.id))
   const canned = projectId ? CANNED_BY_PROJECT[projectId] ?? [] : [...FABLA_CANNED, ...TYPEU_CANNED]
   for (const c of canned) {
-    if (c.match.test(query)) return c.build()
+    if (!c.match.test(query)) continue
+    if (!c.citationIds.every((id) => poolIds.has(id))) continue
+    return { text: c[persona], citationIds: c.citationIds, thinking: c.thinking }
   }
 
   const results = searchItems(query, pool).slice(0, 4)
   if (results.length === 0) return null
 
   const top = results.map((r) => r.item)
-  const summary = top
-    .map((item, i) => `${item.title} (${item.source}) [${i + 1}]`)
-    .join(', ')
+  const sourceCount = new Set(top.map((t) => t.source)).size
+  const summary = top.map((item, i) => `${item.title} (${item.source}) [${i + 1}]`).join(', ')
 
-  return {
-    text: `Based on ${top.length} related item${top.length > 1 ? 's' : ''} across ${new Set(top.map((t) => t.source)).size} source${new Set(top.map((t) => t.source)).size > 1 ? 's' : ''}, here's what's most relevant: ${summary}. Open a citation below for the full context and a link back to the original source.`,
-    citationIds: top.map((i) => i.id),
-  }
+  const text =
+    persona === 'developer'
+      ? `Based on ${top.length} related item${top.length > 1 ? 's' : ''} across ${sourceCount} source${sourceCount > 1 ? 's' : ''}, here's what's most relevant: ${summary}. Open a citation below for the full context and a link back to the original source.`
+      : `Here's what's most relevant across ${sourceCount} connected source${sourceCount > 1 ? 's' : ''}: ${summary}. Click through to see the full context.`
+
+  const thinking = [
+    `Searching connected sources for "${query.trim()}"…`,
+    `Found ${top.length} related item${top.length > 1 ? 's' : ''} across ${sourceCount} source${sourceCount > 1 ? 's' : ''}.`,
+    'Ranking by keyword relevance and recency.',
+  ]
+
+  return { text, citationIds: top.map((i) => i.id), thinking }
+}
+
+export function noAnswerThinking(query: string): string[] {
+  return [
+    `Searching connected sources for "${query.trim()}"…`,
+    'No items scored high enough relevance to confidently cite.',
+  ]
 }
