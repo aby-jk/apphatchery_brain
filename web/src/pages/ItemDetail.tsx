@@ -1,0 +1,87 @@
+import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { getItem, items } from '../data/mockData'
+import { SourceBadge } from '../components/SourceBadge'
+import { ItemCard } from '../components/ItemCard'
+import { absoluteTime, relativeTime } from '../lib/time'
+
+export function ItemDetail() {
+  const { id = '', projectId = '' } = useParams()
+  const item = getItem(id)
+
+  if (!item || item.projectId !== projectId) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-10 text-sm text-slate-500">
+        Item not found. <Link to={`/p/${projectId}`} className="text-brand-navy hover:underline">Go back</Link>
+      </div>
+    )
+  }
+
+  const relatedIds = new Set(item.relatedIds ?? [])
+  ;(item.topicIds ?? []).forEach((tid) => {
+    items.forEach((i) => {
+      if (i.id !== item.id && i.projectId === projectId && i.topicIds?.includes(tid)) relatedIds.add(i.id)
+    })
+  })
+  const related = items.filter((i) => relatedIds.has(i.id))
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 py-8">
+      <Link to={`/p/${projectId}`} className="mb-5 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600">
+        <ArrowLeft size={13} /> Back
+      </Link>
+
+      <div className="mb-4 flex items-center gap-2">
+        <SourceBadge source={item.source} size="md" />
+        <span className="text-xs uppercase tracking-wide text-slate-400">{item.type}</span>
+      </div>
+
+      <h1 className="mb-2 text-xl font-semibold text-slate-900">{item.title}</h1>
+      <div className="mb-5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <span>{item.author}</span>
+        <span>·</span>
+        <span>{item.space}</span>
+        <span>·</span>
+        <span title={absoluteTime(item.createdAt)}>created {relativeTime(item.createdAt)}</span>
+        <span>·</span>
+        <span title={absoluteTime(item.updatedAt)}>updated {relativeTime(item.updatedAt)}</span>
+      </div>
+
+      <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 text-sm leading-relaxed text-slate-700">
+        {item.body}
+      </div>
+
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noreferrer"
+        className="mb-8 inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900"
+      >
+        View on {item.source === 'github' ? 'GitHub' : item.source === 'zulip' ? 'Zulip' : item.source === 'figma' ? 'Figma' : 'Notion'}
+        <ExternalLink size={12} />
+      </a>
+
+      {related.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+            Related items
+          </div>
+          <div className="flex flex-col gap-2">
+            {related.map((r) => (
+              <ItemCard key={r.id} item={r} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <details className="rounded-lg border border-slate-200 bg-white p-3 text-xs">
+        <summary className="cursor-pointer select-none text-slate-500 hover:text-slate-600">
+          Raw metadata
+        </summary>
+        <pre className="mt-3 overflow-x-auto text-[11px] leading-relaxed text-slate-500">
+{JSON.stringify(item, null, 2)}
+        </pre>
+      </details>
+    </div>
+  )
+}
