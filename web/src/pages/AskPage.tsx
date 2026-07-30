@@ -201,7 +201,7 @@ export function AskPage() {
             </div>
           </div>
         ) : (
-          <div className="ask-fade-in mx-auto flex min-h-full max-w-5xl flex-col justify-end gap-5">
+          <div className="ask-fade-in mx-auto flex min-h-full max-w-2xl flex-col justify-end gap-5">
             {messages.map((m) => (
               <ChatMessageBubble key={m.id} message={m} />
             ))}
@@ -212,7 +212,7 @@ export function AskPage() {
 
       {messages.length > 0 && (
         <div className="ask-fade-in px-6 py-4">
-          <div className="mx-auto max-w-5xl">
+          <div className="mx-auto max-w-2xl">
             <ChatComposer
               value={input}
               onChange={setInput}
